@@ -1,23 +1,33 @@
-//
-//  YXURLSchemeHandler.m
-//  dazz
-//
-//  Created by ooc on 2024/8/19.
-//
 
 #import "YXURLSchemeHandler.h"
 #import <CommonCrypto/CommonDigest.h>
 
 NSString *const YX_URL_SCHEME = @"com.yx.url.scheme";
 
+@interface YXURLSchemeHandler ()
+
+/**
+ * 记录任务状态
+ * key = md5 url
+ * value = int   1表示任务已停止
+ */
+@property (strong ,nonatomic) NSMutableDictionary *taskComplet;
+@end
+
 @implementation YXURLSchemeHandler
 
 #pragma mark - hook
 - (void)webView:(nonnull WKWebView *)webView startURLSchemeTask:(nonnull id<WKURLSchemeTask>)urlSchemeTask {
+    __weak typeof(self) _self = self;
+    
     NSURL *URL = urlSchemeTask.request.URL;
     NSString *urlString = URL.absoluteString;
     NSString *originURLString = [URL.absoluteString stringByReplacingOccurrencesOfString:YX_URL_SCHEME withString:@"http"];
     NSString *md5URLString = [YXURLSchemeHandler MD5String:originURLString];
+    
+    if (_taskComplet == nil) {
+        _taskComplet = [NSMutableDictionary dictionary];
+    }
     
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSString *dataDirectory = [YXURLSchemeHandler dataDirectory];
@@ -44,9 +54,7 @@ NSString *const YX_URL_SCHEME = @"com.yx.url.scheme";
     NSURLResponse *response = [NSKeyedUnarchiver unarchiveObjectWithFile:responseFilePath];
     
     if (data && response) {
-        [urlSchemeTask didReceiveResponse:response];
-        [urlSchemeTask didReceiveData:data];
-        [urlSchemeTask didFinish];
+        [self safeReceiveResponse:response data:data urlSchemeTask:urlSchemeTask identifier:md5URLString];
 #if DEBUG
         NSLog(@"⚽️ 使用本地缓存的数据");
 #endif
@@ -69,9 +77,7 @@ NSString *const YX_URL_SCHEME = @"com.yx.url.scheme";
 #endif
         if (data) {
             
-            [urlSchemeTask didReceiveResponse:response];
-            [urlSchemeTask didReceiveData:data];
-            [urlSchemeTask didFinish];
+            [_self safeReceiveResponse:response data:data urlSchemeTask:urlSchemeTask identifier:md5URLString];
             
             // 过滤掉一些不需要缓存的文件
             if ([response.MIMEType containsString:@"text/html"]) {
@@ -103,7 +109,7 @@ NSString *const YX_URL_SCHEME = @"com.yx.url.scheme";
 #if DEBUG
             NSLog(@"⚽️ 文件下载失败: %@" ,originURLString);
 #endif
-            [urlSchemeTask didFailWithError:error];
+            [_self safeFailWithError:error urlSchemeTask:urlSchemeTask identifier:md5URLString];
         }
     }];
     [task resume];
@@ -114,13 +120,52 @@ NSString *const YX_URL_SCHEME = @"com.yx.url.scheme";
 #if DEBUG
     NSLog(@"%s" ,__func__);
 #endif
+    NSURL *URL = urlSchemeTask.request.URL;
+    NSString *urlString = URL.absoluteString;
+    NSString *originURLString = [URL.absoluteString stringByReplacingOccurrencesOfString:YX_URL_SCHEME withString:@"http"];
+    NSString *md5URLString = [YXURLSchemeHandler MD5String:originURLString];
+    _taskComplet[md5URLString] = @(1);
+}
+
+- (void)safeReceiveResponse:(NSURLResponse *)response data:(NSData *)data urlSchemeTask:(id <WKURLSchemeTask>)urlSchemeTask identifier:(id)identifier {
+    id value = _taskComplet[identifier];
+    if ([value respondsToSelector:@selector(integerValue)]) {
+        if ([value integerValue] == 1) {
+            return;
+        }
+    }
+    @try {
+        [urlSchemeTask didReceiveResponse:response];
+        [urlSchemeTask didReceiveData:data];
+        [urlSchemeTask didFinish];
+    } @catch (NSException *exception) {
+#if DEBUG
+        NSLog(@"⚽️ Receive response crash: %@" ,exception);
+#endif
+    }
+}
+
+- (void)safeFailWithError:(NSError *)error urlSchemeTask:(id <WKURLSchemeTask>)urlSchemeTask identifier:(id)identifier {
+    id value = _taskComplet[identifier];
+    if ([value respondsToSelector:@selector(integerValue)]) {
+        if ([value integerValue] == 1) {
+            return;
+        }
+    }
+    @try {
+        [urlSchemeTask didFailWithError:error];
+    } @catch (NSException *exception) {
+#if DEBUG
+        NSLog(@"⚽️ Did fail crash: %@" ,exception);
+#endif
+    }
 }
 
 #pragma mark - cache
 
 + (NSString *)root {
     NSString *result = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) firstObject];
-    result = [result stringByAppendingPathComponent:@"com.dazz.web.cache"];
+    result = [result stringByAppendingPathComponent:@"com.yx.web.cache"];
     return result;
 }
 + (NSString *)dataDirectory {
