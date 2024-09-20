@@ -16,6 +16,15 @@ NSString *const YX_URL_SCHEME = @"com.yx.url.scheme";
 
 @implementation YXURLSchemeHandler
 
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        _excludeTypes = @[@"text/html"];
+    }
+    return self;
+}
+
 #pragma mark - hook
 - (void)webView:(nonnull WKWebView *)webView startURLSchemeTask:(nonnull id<WKURLSchemeTask>)urlSchemeTask {
     __weak typeof(self) _self = self;
@@ -80,7 +89,7 @@ NSString *const YX_URL_SCHEME = @"com.yx.url.scheme";
             [_self safeReceiveResponse:response data:data urlSchemeTask:urlSchemeTask identifier:md5URLString];
             
             // 过滤掉一些不需要缓存的文件
-            if ([response.MIMEType containsString:@"text/html"]) {
+            if ([_self.excludeTypes containsObject:response.MIMEType]) {
 #if DEBUG
                 NSLog(@"⚽️ 数据缓存失败，此类文件无需缓存: %@" ,originURLString);
 #endif
@@ -162,7 +171,9 @@ NSString *const YX_URL_SCHEME = @"com.yx.url.scheme";
 }
 
 #pragma mark - cache
-
++ (NSString *)cacheRoot {
+    return [self root];
+}
 + (NSString *)root {
     NSString *result = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) firstObject];
     result = [result stringByAppendingPathComponent:@"com.yx.web.cache"];
