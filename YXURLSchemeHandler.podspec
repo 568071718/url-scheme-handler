@@ -7,7 +7,7 @@ Pod::Spec.new do |spec|
   
   spec.ios.deployment_target  = '11.0'
   spec.license      = { :type => 'MIT' }
-  spec.homepage     = 'https://www.baidu.com'
+  spec.homepage     = 'https://github.com/568071718/url-scheme-handler'
   spec.authors      = { 'o.o.c.' => '568071718@qq.com' }
   spec.source       = { :git => 'https://gitee.com/568071718/url-scheme-handler.git', :tag => "v#{spec.version}" }
   

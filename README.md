@@ -1,10 +1,21 @@
 
-WKWebView 资源缓存
+WKWebView 资源缓存  
+
+---  
+
+* [Github](https://github.com/568071718/url-scheme-handler)    
+* [Gitee](https://gitee.com/568071718/url-scheme-handler)  
 
 ## 集成  
 
 * CocoaPods  
 ```
+以下源选择一个配置到项目 Podfile 文件，执行 pod install  
+
+# Github  
+pod 'YXURLSchemeHandler', :git => 'https://github.com/568071718/url-scheme-handler.git'  
+
+# Gitee  
 pod 'YXURLSchemeHandler', :git => 'https://gitee.com/568071718/url-scheme-handler.git'
 ```
 
