@@ -9,7 +9,7 @@ WKWebView 资源缓存
 ## 集成  
 
 * CocoaPods  
-```
+```ruby 
 以下源选择一个配置到项目 Podfile 文件，执行 pod install  
 
 # Github  
@@ -20,7 +20,7 @@ pod 'YXURLSchemeHandler', :git => 'https://gitee.com/568071718/url-scheme-handle
 ```
 
 ## 使用  
-```
+```objc 
 
 WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
 
