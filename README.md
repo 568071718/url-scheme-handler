@@ -10,7 +10,7 @@ WKWebView 资源缓存
 
 * CocoaPods  
 ```ruby 
-以下源选择一个配置到项目 Podfile 文件，执行 pod install  
+# 以下源选择一个配置到项目 Podfile 文件，执行 pod install  
 
 # Github  
 pod 'YXURLSchemeHandler', :git => 'https://github.com/568071718/url-scheme-handler.git'  
